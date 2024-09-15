@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QRコードリーダー（互換性チェック強化版）</title>
+    <title>改善版QRコードリーダー</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <style>
         #videoElement {
@@ -11,21 +11,17 @@
             max-width: 500px;
             display: none;
         }
-        #startButton {
-            font-size: 16px;
-            padding: 10px 20px;
-            margin: 20px 0;
-        }
         #debugInfo {
             margin-top: 20px;
             padding: 10px;
             background-color: #f0f0f0;
             border: 1px solid #ccc;
+            white-space: pre-wrap;
         }
     </style>
 </head>
 <body>
-    <h1>QRコードリーダー（互換性チェック強化版）</h1>
+    <h1>改善版QRコードリーダー</h1>
     <button id="startButton">カメラを起動</button>
     <video id="videoElement"></video>
     <div id="output"></div>
@@ -38,76 +34,77 @@
         const debugInfoDiv = document.getElementById('debugInfo');
 
         function addDebugInfo(message) {
-            debugInfoDiv.innerHTML += message + '<br>';
+            debugInfoDiv.textContent += message + '\n';
             console.log(message);
         }
 
-        function checkBrowserCompatibility() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                addDebugInfo('お使いのブラウザはgetUserMediaをサポートしていません。');
-                startButton.disabled = true;
-                outputDiv.innerHTML = 'お使いのブラウザはカメラ機能をサポートしていません。最新のChrome、Firefox、SafariまたはEdgeブラウザをお使いください。';
-                return false;
-            } else {
-                addDebugInfo('お使いのブラウザはgetUserMediaをサポートしています。');
-                return true;
-            }
-        }
-
-        // ページ読み込み時に互換性チェックを実行
-        if (checkBrowserCompatibility()) {
-            startButton.onclick = function() {
-                addDebugInfo('カメラ起動ボタンがクリックされました。');
-                startCamera();
-                this.disabled = true;
-            };
-        }
+        startButton.onclick = function() {
+            addDebugInfo('カメラ起動ボタンがクリックされました。');
+            startCamera();
+            this.disabled = true;
+        };
 
         function startCamera() {
             addDebugInfo('startCamera関数が呼び出されました。');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(function(stream) {
-                    addDebugInfo('カメラストリームの取得に成功しました。');
-                    video.srcObject = stream;
-                    video.setAttribute('playsinline', true);
-                    video.style.display = 'block';
-                    video.play()
-                        .then(() => {
-                            addDebugInfo('ビデオの再生が開始されました。');
-                            requestAnimationFrame(tick);
-                        })
-                        .catch((error) => {
-                            addDebugInfo('ビデオの再生に失敗しました: ' + error);
-                        });
-                })
-                .catch(function(error) {
-                    console.error("カメラの起動に失敗しました: ", error);
-                    addDebugInfo("カメラの起動に失敗しました: " + error);
-                    outputDiv.innerHTML = "カメラの起動に失敗しました。デバイスの設定を確認してください。";
-                    startButton.disabled = false;
-                });
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            })
+            .then(function(stream) {
+                addDebugInfo('カメラストリームの取得に成功しました。');
+                video.srcObject = stream;
+                video.setAttribute('playsinline', true);
+                video.style.display = 'block';
+                video.play()
+                    .then(() => {
+                        addDebugInfo('ビデオの再生が開始されました。');
+                        requestAnimationFrame(tick);
+                    })
+                    .catch((error) => {
+                        addDebugInfo('ビデオの再生に失敗しました: ' + error);
+                    });
+            })
+            .catch(function(error) {
+                addDebugInfo("カメラの起動に失敗しました: " + error);
+                outputDiv.innerHTML = "カメラの起動に失敗しました。デバイスの設定を確認してください。";
+                startButton.disabled = false;
+            });
         }
 
         function tick() {
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        console.log("Video data ready");
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        console.log("Image data extracted");
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) {
-            console.log("QR code detected:", code.data);
-            outputDiv.innerHTML = 'QRコードの内容: ' + code.data;
-        } else {
-            console.log("No QR code detected");
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                addDebugInfo("Video data ready");
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                addDebugInfo(`Canvas size: ${canvas.width}x${canvas.height}`);
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                addDebugInfo("Image data extracted");
+                try {
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    if (code) {
+                        addDebugInfo("QR code detected: " + code.data);
+                        outputDiv.innerHTML = 'QRコードの内容: ' + code.data;
+                        // QRコードを検出したら、ビデオストリームを停止
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                        video.style.display = 'none';
+                        startButton.disabled = false;
+                    } else {
+                        addDebugInfo("No QR code detected");
+                    }
+                } catch (error) {
+                    addDebugInfo("Error during QR code detection: " + error);
+                }
+            } else {
+                addDebugInfo("Video data not ready");
+            }
+            requestAnimationFrame(tick);
         }
-    }
-    requestAnimationFrame(tick);
-}
     </script>
 </body>
 </html>
