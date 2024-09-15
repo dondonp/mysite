@@ -89,30 +89,25 @@
         }
 
         function tick() {
-            addDebugInfo('tick関数が呼び出されました。');
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                addDebugInfo('ビデオデータの読み取りが可能です。');
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                if (code) {
-                    addDebugInfo('QRコードが検出されました: ' + code.data);
-                    outputDiv.innerHTML = '読み取り結果: ' + code.data;
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                    video.style.display = 'none';
-                    startButton.disabled = false;
-                    return;
-                }
-            } else {
-                addDebugInfo('ビデオデータがまだ読み取れません。');
-            }
-            requestAnimationFrame(tick);
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        console.log("Video data ready");
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        console.log("Image data extracted");
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code) {
+            console.log("QR code detected:", code.data);
+            outputDiv.innerHTML = 'QRコードの内容: ' + code.data;
+        } else {
+            console.log("No QR code detected");
         }
+    }
+    requestAnimationFrame(tick);
+}
     </script>
 </body>
 </html>
