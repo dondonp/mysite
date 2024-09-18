@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZXingを使用したQRコードリーダー</title>
+    <title>改訂版ZXingを使用したQRコードリーダー</title>
     <style>
         #videoElement {
             width: 100%;
@@ -18,10 +18,10 @@
             white-space: pre-wrap;
         }
     </style>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 </head>
 <body>
-    <h1>ZXingを使用したQRコードリーダー</h1>
+    <h1>改訂版ZXingを使用したQRコードリーダー</h1>
     <button id="startButton">カメラを起動</button>
     <video id="videoElement"></video>
     <div id="output"></div>
@@ -46,14 +46,15 @@
                 this.disabled = true;
 
                 try {
-                    codeReader = new ZXing.BrowserQRCodeReader();
+                    if (typeof ZXing === 'undefined') {
+                        throw new Error('ZXingライブラリが読み込まれていません。');
+                    }
+
+                    codeReader = new ZXing.BrowserMultiFormatReader();
                     addDebugInfo('ZXingライブラリが正常に読み込まれました。');
 
-                    const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-                    const selectedDeviceId = videoInputDevices[0].deviceId;
-
                     const previewElem = document.getElementById('videoElement');
-                    codeReader.decodeFromVideoDevice(selectedDeviceId, previewElem, (result, err) => {
+                    codeReader.decodeFromVideoDevice(null, previewElem, (result, err) => {
                         if (result) {
                             addDebugInfo("QR code detected: " + result.text);
                             outputDiv.innerHTML = 'QRコードの内容: ' + result.text;
@@ -74,6 +75,15 @@
                     this.disabled = false;
                 }
             };
+
+            // ZXingライブラリの読み込み確認
+            if (typeof ZXing !== 'undefined') {
+                addDebugInfo('ZXingライブラリが正常に読み込まれました。');
+            } else {
+                addDebugInfo('ZXingライブラリの読み込みに失敗しました。');
+                startButton.disabled = true;
+                outputDiv.innerHTML = 'QRコード読み取り機能を利用できません。ページを再読み込みしてください。';
+            }
 
             addDebugInfo('アプリケーションの準備が完了しました。');
         });
