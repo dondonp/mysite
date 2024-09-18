@@ -3,29 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>改訂版ZXingを使用したQRコードリーダー</title>
+    <title>スタイリッシュなQRコードリーダー</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
     <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #1976D2;
+            font-weight: 300;
+            margin-bottom: 30px;
+        }
         #videoElement {
             width: 100%;
             max-width: 500px;
             display: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        #startButton {
+            display: block;
+            width: 200px;
+            margin: 20px auto;
+            padding: 12px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #startButton:hover {
+            background-color: #1976D2;
+        }
+        #startButton:disabled {
+            background-color: #BDBDBD;
+            cursor: not-allowed;
+        }
+        #output {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            min-height: 50px;
         }
         #debugInfo {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
+            background-color: #E3F2FD;
+            padding: 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             white-space: pre-wrap;
+            font-size: 14px;
+            display: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
-    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 </head>
 <body>
-    <h1>改訂版ZXingを使用したQRコードリーダー</h1>
-    <button id="startButton">カメラを起動</button>
-    <video id="videoElement"></video>
-    <div id="output"></div>
-    <div id="debugInfo"></div>
+    <div class="container">
+        <h1 class="fade-in">スタイリッシュなQRコードリーダー</h1>
+        <button id="startButton" class="fade-in">カメラを起動</button>
+        <video id="videoElement" class="fade-in"></video>
+        <div id="output" class="fade-in">QRコードをスキャンしてください</div>
+        <div id="debugInfo"></div>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -44,6 +105,7 @@
             startButton.onclick = async function() {
                 addDebugInfo('カメラ起動ボタンがクリックされました。');
                 this.disabled = true;
+                this.textContent = 'カメラ起動中...';
 
                 try {
                     if (typeof ZXing === 'undefined') {
@@ -53,14 +115,15 @@
                     codeReader = new ZXing.BrowserMultiFormatReader();
                     addDebugInfo('ZXingライブラリが正常に読み込まれました。');
 
-                    const previewElem = document.getElementById('videoElement');
-                    codeReader.decodeFromVideoDevice(null, previewElem, (result, err) => {
+                    await codeReader.decodeFromVideoDevice(null, video, (result, err) => {
                         if (result) {
                             addDebugInfo("QR code detected: " + result.text);
                             outputDiv.innerHTML = 'QRコードの内容: ' + result.text;
+                            outputDiv.classList.add('fade-in');
                             codeReader.reset();
                             video.style.display = 'none';
                             startButton.disabled = false;
+                            startButton.textContent = '再スキャン';
                         }
                         if (err && !(err instanceof ZXing.NotFoundException)) {
                             addDebugInfo("Error during QR code detection: " + err);
@@ -68,15 +131,17 @@
                     });
 
                     video.style.display = 'block';
+                    video.classList.add('fade-in');
+                    outputDiv.innerHTML = 'カメラが起動しました。QRコードをスキャンしてください。';
                     addDebugInfo('カメラが起動しました。QRコードをスキャンしてください。');
                 } catch (err) {
                     addDebugInfo('エラーが発生しました: ' + err);
                     outputDiv.innerHTML = 'QRコード読み取り機能を利用できません。ページを再読み込みしてください。';
                     this.disabled = false;
+                    this.textContent = 'カメラを起動';
                 }
             };
 
-            // ZXingライブラリの読み込み確認
             if (typeof ZXing !== 'undefined') {
                 addDebugInfo('ZXingライブラリが正常に読み込まれました。');
             } else {
