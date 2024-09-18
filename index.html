@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>改善版QRコードリーダー</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <title>ZXingを使用したQRコードリーダー</title>
     <style>
         #videoElement {
             width: 100%;
@@ -19,92 +18,65 @@
             white-space: pre-wrap;
         }
     </style>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
 </head>
 <body>
-    <h1>改善版QRコードリーダー</h1>
+    <h1>ZXingを使用したQRコードリーダー</h1>
     <button id="startButton">カメラを起動</button>
     <video id="videoElement"></video>
     <div id="output"></div>
     <div id="debugInfo"></div>
 
     <script>
-        const video = document.getElementById('videoElement');
-        const outputDiv = document.getElementById('output');
-        const startButton = document.getElementById('startButton');
-        const debugInfoDiv = document.getElementById('debugInfo');
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('videoElement');
+            const outputDiv = document.getElementById('output');
+            const startButton = document.getElementById('startButton');
+            const debugInfoDiv = document.getElementById('debugInfo');
 
-        function addDebugInfo(message) {
-            debugInfoDiv.textContent += message + '\n';
-            console.log(message);
-        }
-
-        startButton.onclick = function() {
-            addDebugInfo('カメラ起動ボタンがクリックされました。');
-            startCamera();
-            this.disabled = true;
-        };
-
-        function startCamera() {
-            addDebugInfo('startCamera関数が呼び出されました。');
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: "environment",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            })
-            .then(function(stream) {
-                addDebugInfo('カメラストリームの取得に成功しました。');
-                video.srcObject = stream;
-                video.setAttribute('playsinline', true);
-                video.style.display = 'block';
-                video.play()
-                    .then(() => {
-                        addDebugInfo('ビデオの再生が開始されました。');
-                        requestAnimationFrame(tick);
-                    })
-                    .catch((error) => {
-                        addDebugInfo('ビデオの再生に失敗しました: ' + error);
-                    });
-            })
-            .catch(function(error) {
-                addDebugInfo("カメラの起動に失敗しました: " + error);
-                outputDiv.innerHTML = "カメラの起動に失敗しました。デバイスの設定を確認してください。";
-                startButton.disabled = false;
-            });
-        }
-
-        function tick() {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                addDebugInfo("Video data ready");
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                addDebugInfo(`Canvas size: ${canvas.width}x${canvas.height}`);
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                addDebugInfo("Image data extracted");
-                try {
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    if (code) {
-                        addDebugInfo("QR code detected: " + code.data);
-                        outputDiv.innerHTML = 'QRコードの内容: ' + code.data;
-                        // QRコードを検出したら、ビデオストリームを停止
-                        video.srcObject.getTracks().forEach(track => track.stop());
-                        video.style.display = 'none';
-                        startButton.disabled = false;
-                    } else {
-                        addDebugInfo("No QR code detected");
-                    }
-                } catch (error) {
-                    addDebugInfo("Error during QR code detection: " + error);
-                }
-            } else {
-                addDebugInfo("Video data not ready");
+            function addDebugInfo(message) {
+                debugInfoDiv.textContent += message + '\n';
+                console.log(message);
             }
-            requestAnimationFrame(tick);
-        }
+
+            let codeReader;
+
+            startButton.onclick = async function() {
+                addDebugInfo('カメラ起動ボタンがクリックされました。');
+                this.disabled = true;
+
+                try {
+                    codeReader = new ZXing.BrowserQRCodeReader();
+                    addDebugInfo('ZXingライブラリが正常に読み込まれました。');
+
+                    const videoInputDevices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+                    const selectedDeviceId = videoInputDevices[0].deviceId;
+
+                    const previewElem = document.getElementById('videoElement');
+                    codeReader.decodeFromVideoDevice(selectedDeviceId, previewElem, (result, err) => {
+                        if (result) {
+                            addDebugInfo("QR code detected: " + result.text);
+                            outputDiv.innerHTML = 'QRコードの内容: ' + result.text;
+                            codeReader.reset();
+                            video.style.display = 'none';
+                            startButton.disabled = false;
+                        }
+                        if (err && !(err instanceof ZXing.NotFoundException)) {
+                            addDebugInfo("Error during QR code detection: " + err);
+                        }
+                    });
+
+                    video.style.display = 'block';
+                    addDebugInfo('カメラが起動しました。QRコードをスキャンしてください。');
+                } catch (err) {
+                    addDebugInfo('エラーが発生しました: ' + err);
+                    outputDiv.innerHTML = 'QRコード読み取り機能を利用できません。ページを再読み込みしてください。';
+                    this.disabled = false;
+                }
+            };
+
+            addDebugInfo('アプリケーションの準備が完了しました。');
+        });
     </script>
 </body>
 </html>
