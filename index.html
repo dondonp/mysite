@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スタイリッシュなQRコードリーダー（JSON対応）</title>
+    <title>スタイリッシュなQRコードリーダー（スクリーンキーボード付き）</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
     <style>
+        /* 既存のスタイル */
         body {
             font-family: 'Roboto', sans-serif;
             margin: 0;
@@ -84,13 +85,14 @@
             margin-top: 20px;
             display: none;
         }
-        #productForm input[type="text"] {
+        #productNO {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 16px;
+            text-align: center;
         }
         .fade-in {
             animation: fadeIn 0.5s ease-in;
@@ -99,18 +101,88 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        /* スクリーンキーボードのスタイル */
+        .keyboard {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f0f0f0;
+            padding: 10px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+        .key {
+            width: 40px;
+            height: 40px;
+            margin: 2px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+        .key:hover {
+            background-color: #e0e0e0;
+        }
+        .key-wide {
+            width: 80px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="fade-in">スタイリッシュなQRコードリーダー（JSON対応）</h1>
+        <h1 class="fade-in">スタイリッシュなQRコードリーダー（スクリーンキーボード付き）</h1>
         <button id="startButton" class="fade-in">カメラを起動</button>
         <video id="videoElement" class="fade-in"></video>
         <div id="output" class="fade-in">QRコードをスキャンしてください</div>
         <div id="jsonOutput" class="fade-in"></div>
         <div id="productForm" class="fade-in">
-            <input type="text" id="productNO" placeholder="製番（productNO）を入力">
+            <input type="text" id="productNO" placeholder="製番（例: AB-123）" readonly>
             <button id="registerButton">登録</button>
+        </div>
+    </div>
+
+    <!-- アルファベットキーボード -->
+    <div id="alphabetKeyboard" class="keyboard">
+        <div class="keyboard-row">
+            <button class="key">Q</button><button class="key">W</button><button class="key">E</button><button class="key">R</button><button class="key">T</button><button class="key">Y</button><button class="key">U</button><button class="key">I</button><button class="key">O</button><button class="key">P</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key">A</button><button class="key">S</button><button class="key">D</button><button class="key">F</button><button class="key">G</button><button class="key">H</button><button class="key">J</button><button class="key">K</button><button class="key">L</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key">Z</button><button class="key">X</button><button class="key">C</button><button class="key">V</button><button class="key">B</button><button class="key">N</button><button class="key">M</button>
+            <button class="key key-wide">Backspace</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key key-wide">完了</button>
+        </div>
+    </div>
+
+    <!-- 数字キーボード -->
+    <div id="numberKeyboard" class="keyboard">
+        <div class="keyboard-row">
+            <button class="key">1</button><button class="key">2</button><button class="key">3</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key">4</button><button class="key">5</button><button class="key">6</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key">7</button><button class="key">8</button><button class="key">9</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key">0</button>
+            <button class="key key-wide">Backspace</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key key-wide">完了</button>
         </div>
     </div>
 
@@ -123,8 +195,12 @@
             const productForm = document.getElementById('productForm');
             const productNOInput = document.getElementById('productNO');
             const registerButton = document.getElementById('registerButton');
+            const alphabetKeyboard = document.getElementById('alphabetKeyboard');
+            const numberKeyboard = document.getElementById('numberKeyboard');
 
             let scannedData = null;
+            let currentKeyboard = null;
+            let isEditingAlphabet = true;
 
             function formatJSON(jsonString) {
                 try {
@@ -141,6 +217,64 @@
                 jsonOutputDiv.style.display = 'block';
                 productForm.style.display = 'block';
             }
+
+            function showKeyboard(keyboard) {
+                if (currentKeyboard) {
+                    currentKeyboard.style.display = 'none';
+                }
+                keyboard.style.display = 'block';
+                currentKeyboard = keyboard;
+            }
+
+            function hideKeyboard() {
+                if (currentKeyboard) {
+                    currentKeyboard.style.display = 'none';
+                    currentKeyboard = null;
+                }
+            }
+
+            productNOInput.addEventListener('click', function() {
+                isEditingAlphabet = true;
+                showKeyboard(alphabetKeyboard);
+            });
+
+            function handleKeyPress(key) {
+                let currentValue = productNOInput.value;
+                if (key === 'Backspace') {
+                    currentValue = currentValue.slice(0, -1);
+                } else if (key === '完了') {
+                    hideKeyboard();
+                    return;
+                } else {
+                    if (isEditingAlphabet) {
+                        if (currentValue.length < 2) {
+                            currentValue += key;
+                        }
+                        if (currentValue.length === 2) {
+                            currentValue += '-';
+                            isEditingAlphabet = false;
+                            showKeyboard(numberKeyboard);
+                        }
+                    } else {
+                        if (currentValue.length < 6) {
+                            currentValue += key;
+                        }
+                    }
+                }
+                productNOInput.value = currentValue;
+            }
+
+            alphabetKeyboard.addEventListener('click', function(e) {
+                if (e.target.classList.contains('key')) {
+                    handleKeyPress(e.target.textContent);
+                }
+            });
+
+            numberKeyboard.addEventListener('click', function(e) {
+                if (e.target.classList.contains('key')) {
+                    handleKeyPress(e.target.textContent);
+                }
+            });
 
             let codeReader;
 
