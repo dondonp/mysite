@@ -101,13 +101,13 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        /* スクリーンキーボードのスタイル */
+        /* 更新されたスクリーンキーボードのスタイル */
         .keyboard {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: #f0f0f0;
+            background-color: #e0e0e0;
             padding: 10px;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             display: none;
@@ -125,14 +125,21 @@
             border: none;
             border-radius: 5px;
             background-color: #fff;
+            color: #333;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .key:hover {
-            background-color: #e0e0e0;
+            background-color: #f0f0f0;
         }
         .key-wide {
             width: 80px;
+        }
+        .key-extra-wide {
+            width: 120px;
         }
     </style>
 </head>
@@ -162,7 +169,7 @@
             <button class="key key-wide">Backspace</button>
         </div>
         <div class="keyboard-row">
-            <button class="key key-wide">完了</button>
+            <button class="key key-extra-wide">完了</button>
         </div>
     </div>
 
@@ -182,7 +189,7 @@
             <button class="key key-wide">Backspace</button>
         </div>
         <div class="keyboard-row">
-            <button class="key key-wide">完了</button>
+            <button class="key key-extra-wide">完了</button>
         </div>
     </div>
 
@@ -234,14 +241,20 @@
             }
 
             productNOInput.addEventListener('click', function() {
-                isEditingAlphabet = true;
-                showKeyboard(alphabetKeyboard);
+                isEditingAlphabet = productNOInput.value.length < 2;
+                showKeyboard(isEditingAlphabet ? alphabetKeyboard : numberKeyboard);
             });
 
             function handleKeyPress(key) {
                 let currentValue = productNOInput.value;
                 if (key === 'Backspace') {
-                    currentValue = currentValue.slice(0, -1);
+                    if (currentValue.endsWith('-')) {
+                        currentValue = currentValue.slice(0, -2);
+                        isEditingAlphabet = true;
+                        showKeyboard(alphabetKeyboard);
+                    } else {
+                        currentValue = currentValue.slice(0, -1);
+                    }
                 } else if (key === '完了') {
                     hideKeyboard();
                     return;
