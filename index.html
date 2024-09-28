@@ -119,7 +119,6 @@
             margin-bottom: 5px;
         }
         .key {
-            width: 8.5%;
             height: 45px;
             margin: 0 0.25%;
             font-size: 16px;
@@ -137,14 +136,29 @@
         .key:hover {
             background-color: #f0f0f0;
         }
-        .key-wide {
-            width: 15%;
+        #alphabetKeyboard .key {
+            width: 8.5%;
         }
-        .key-extra-wide {
+        #alphabetKeyboard .key-wide {
+            width: 23%;
+        }
+        #alphabetKeyboard .key-extra-wide {
             width: 98%;
         }
         #alphabetKeyboard .keyboard-row:nth-child(3) {
-            padding: 0 4%;
+            padding: 0 2%;
+        }
+        #numberKeyboard .key {
+            width: 30%;
+            height: 60px;
+            font-size: 20px;
+            margin: 0.5%;
+        }
+        #numberKeyboard .key-wide {
+            width: 62%;
+        }
+        #numberKeyboard .key-extra-wide {
+            width: 98%;
         }
     </style>
 </head>
