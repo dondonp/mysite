@@ -307,6 +307,9 @@
                     handleKeyPress(e.target.textContent);
                 }
             });
+            
+
+            
 
             let codeReader;
 
@@ -354,18 +357,34 @@
                     console.log('登録ボタンがクリックされました。');
                     console.log('製番:', productNO);
                     console.log('スキャンデータ:', scannedData);
-                    // ここに登録処理を追加します
-                    alert('登録ボタンがクリックされました。\n製番: ' + productNO);
+                    
+                    // リモートサーバーにデータを送信
+                    fetch('http://54.92.33.119/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            productNO: productNO,
+                            qrData: JSON.parse(scannedData)
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('データが正常に登録されました。');
+                        } else {
+                            alert('データの登録に失敗しました: ' + data.error);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                        alert('エラーが発生しました。もう一度お試しください。');
+                    });
                 } else {
                     alert('製番を入力し、QRコードをスキャンしてください。');
                 }
             };
-
-            if (typeof ZXing === 'undefined') {
-                console.error('ZXingライブラリの読み込みに失敗しました。');
-                startButton.disabled = true;
-                outputDiv.innerHTML = 'QRコード読み取り機能を利用できません。ページを再読み込みしてください。';
-            }
         });
     </script>
 </body>
